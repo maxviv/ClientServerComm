@@ -21,11 +21,11 @@ namespace comm
 		virtual ~server_interface()
 		{
 			// May as well try and tidy up
-			Stop();
+			stop();
 		}
 
 		// Starts the server!
-		bool Start()
+		bool start()
 		{
 			try
 			{
@@ -34,7 +34,7 @@ namespace comm
 				// from exiting immediately. Since this is a server, we 
 				// want it primed ready to handle clients trying to
 				// connect.
-				WaitForClientConnection();
+				waitForClientConnection();
 
 				// Launch the asio context in its own thread
 				m_threadContext = std::thread([this]() { m_asioContext.run(); });
@@ -51,7 +51,7 @@ namespace comm
 		}
 
 		// Stops the server!
-		void Stop()
+		void stop()
 		{
 			// Request the context to close
 			m_asioContext.stop();
@@ -64,7 +64,7 @@ namespace comm
 		}
 
 		// ASYNC - Instruct asio to wait for connection
-		void WaitForClientConnection()
+		void waitForClientConnection()
 		{
 			// Prime context with an instruction to wait until a socket connects. This
 			// is the purpose of an "acceptor" object. It will provide a unique socket
@@ -113,12 +113,12 @@ namespace comm
 
 					// Prime the asio context with more work - again simply wait for
 					// another connection...
-					WaitForClientConnection();
+					waitForClientConnection();
 				});
 		}
 
 		// Send a message to a specific client
-		void MessageClient(std::shared_ptr<connection<T>> client, const message<T>& msg)
+		void messageClient(std::shared_ptr<connection<T>> client, const message<T>& msg)
 		{
 			// Check client is legitimate...
 			if (client && client->IsConnected())
@@ -145,7 +145,7 @@ namespace comm
 
 
 		// Force server to respond to incoming messages
-		void Update(size_t nMaxMessages = -1, bool bWait = false)
+		void processClientRequests(size_t nMaxMessages = -1, bool bWait = false)
 		{
 			if (bWait) m_qMessagesIn.wait();
 
@@ -201,7 +201,7 @@ namespace comm
 		// These things need an asio context
 		asio::ip::tcp::acceptor m_asioAcceptor; // Handles new incoming connection attempts...
 
-		// Clients will be identified in the "wider system" via an ID
+		// This is used for assigning ID to a client in case of multiple client connections
 		uint32_t nIDCounter = 10000;
 	};
 }

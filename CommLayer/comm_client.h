@@ -19,12 +19,12 @@ namespace comm
 		virtual ~client_interface()
 		{
 			// If the client is destroyed, always try and disconnect from server
-			Disconnect();
+			disconnect();
 		}
 
 	public:
 		// Connect to server with hostname/ip-address and port
-		bool Connect(const std::string& host, const uint16_t port)
+		bool connect(const std::string& host, const uint16_t port)
 		{
 			try
 			{
@@ -50,10 +50,10 @@ namespace comm
 		}
 
 		// Disconnect from server
-		void Disconnect()
+		void disconnect()
 		{
 			// If connection exists, and it's connected then...
-			if (IsConnected())
+			if (isConnected())
 			{
 				// ...disconnect from server gracefully
 				m_connection->Disconnect();
@@ -70,7 +70,7 @@ namespace comm
 		}
 
 		// Check if client is actually connected to a server
-		bool IsConnected()
+		bool isConnected()
 		{
 			if (m_connection)
 				return m_connection->IsConnected();
@@ -80,9 +80,9 @@ namespace comm
 
 	public:
 		// Send message to server
-		void Send(const message<T>& msg)
+		void send(const message<T>& msg)
 		{
-			if (IsConnected())
+			if (isConnected())
 				m_connection->Send(msg);
 		}
 

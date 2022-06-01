@@ -1,7 +1,9 @@
 #include <iostream>
-#include <comm_layer.h>
 #include <chrono>
 #include <thread>
+
+#include <comm_layer.h>
+
 using namespace std::this_thread;
 using namespace std::chrono; 
 
@@ -11,12 +13,19 @@ enum class CustomMsgTypes : uint32_t
 	ServerDeny,
 	ServerPing,
 	ServerMessage,
-	Name,
-	Age,
+	AgeQuery,
+	AgeReply,
 };
 
-
-
+/*
+* This is a simple client which tries to connect to the server. The server has a database of person info containting attributes such as age
+* The client asks for input the Person ID for whih you want to query age .
+* The client then passes this message to server.
+* The server replies by sending a message back to the client which contains the ID and age of the person.
+* If the person ID is not there in server's database, the server sends a message which contains age value as -1.
+* The client is in a busy loop polling for the messages from the server  in its queue and asking for the query.
+* Client can be quit if we input -1 as the ID of the person
+*/
 class CustomClient : public comm::client_interface<CustomMsgTypes>
 {
 public:
@@ -28,15 +37,15 @@ public:
 		std::chrono::system_clock::time_point timeNow = std::chrono::system_clock::now();
 
 		msg << timeNow;
-		Send(msg);
+		send(msg);
 	}
 
 	void queryAge(int personNum)
 	{
 		comm::message<CustomMsgTypes> msg;
-		msg.header.id = CustomMsgTypes::Name;
+		msg.header.id = CustomMsgTypes::AgeQuery;
 		msg << personNum;
-		Send(msg);
+		send(msg);
 
 	}
 
@@ -46,21 +55,19 @@ public:
 int main()
 {
 	CustomClient c;
-	c.Connect("127.0.0.1", 60000);
+	c.connect("127.0.0.1", 60000);
 
 
 	bool bQuit = false;
 	while (!bQuit)
 	{
-		
-		
-		//c.pingServer();
 		sleep_for(seconds(5));
-		if (c.IsConnected())
+		if (c.isConnected())
 		{
 			
 			if (!c.Incoming().empty())
 			{
+				//pop the message in the client's queue
 				auto msg = c.Incoming().pop_front().msg;
 
 				switch (msg.header.id)
@@ -83,16 +90,7 @@ int main()
 				}
 				break;
 
-				case CustomMsgTypes::ServerMessage:
-				{
-					// Server has responded to a ping request	
-					uint32_t clientID;
-					msg >> clientID;
-					std::cout << "Hello from [" << clientID << "]\n";
-				}
-				break;
-
-				case CustomMsgTypes::Age:
+				case CustomMsgTypes::AgeReply:
 				{
 					// Server has responded to a ping request	
 					int per_no, age;

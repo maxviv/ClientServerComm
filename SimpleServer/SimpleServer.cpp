@@ -8,20 +8,28 @@ enum class CustomMsgTypes : uint32_t
 	ServerDeny,
 	ServerPing,
 	ServerMessage,
-	Name,
-	Age,
+	AgeQuery,
+	AgeReply,
 };
 
 
-
+/*
+* AgeInfoServer is a simple server which contains a database of person's ID vs Age.
+* If the server gets a Age Query from a client, it replies back with a message to client.
+* The message body contains the person ID and age of the person.
+* If the person ID doesnt exist in Server's data base, it replies by sending age as -1 in message body
+* The AgeInfo server waits in a busy loop looking for requests from clients.Once it gets any request it processes the client request
+* If the message queue of the server is empty it waits till there are some messages in its queue.
+*/
 class AgeInfoServer : public comm::server_interface<CustomMsgTypes>
 {
 private:
+	//This map contains info about the age given a person's ID
 	std::map <std::string, int> name_vs_map;
 public:
 	AgeInfoServer(uint16_t nPort) : comm::server_interface<CustomMsgTypes>(nPort)
 	{
-		//Populate DB of Name vs Age
+		//Populate DB of personID vs Age
 		for (int i = 1; i <= 10; i++) {
 			std::string name = "person";
 			name += std::to_string(i);
@@ -58,15 +66,15 @@ protected:
 
 		}
 
-		case CustomMsgTypes::Name:
+		case CustomMsgTypes::AgeQuery:
 		{
 			int per_no;
 			msg >> per_no;
 			std::string text = "person";
 			text += std::to_string(per_no);
-			std::cout << "[Clinet ID " << client->GetID() <<  "]" << " has queried the age of " << text << std::endl;
+			std::cout << "[Client ID " << client->GetID() <<  "]" << " has queried the age of " << text << std::endl;
 			comm::message<CustomMsgTypes> msg;
-			msg.header.id = CustomMsgTypes::Age;
+			msg.header.id = CustomMsgTypes::AgeReply;
 			if (name_vs_map.find(text) == name_vs_map.end()) {
 				std::cout << " No age info for " << text << std::endl;
 				msg << per_no;
@@ -90,11 +98,11 @@ protected:
 int main()
 {
 	AgeInfoServer server(60000);
-	server.Start();
+	server.start();
 
 	while (1)
 	{
-		server.Update(-1, true);
+		server.processClientRequests(-1, true);
 	}
 
 
